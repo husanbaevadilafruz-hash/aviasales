@@ -1,0 +1,40 @@
+# pubspec.yaml - Конфигурация Flutter проекта
+
+# Это файл, который описывает:
+# - Название проекта
+# - Версию Flutter
+# - Все библиотеки, которые нужны для проекта
+
+name: aviasales_mobile
+description: Airline Booking Mobile App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+# Зависимости (библиотеки)
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP запросы к API
+  http: ^1.1.0
+  
+  # Хранение данных локально (для JWT токена)
+  shared_preferences: ^2.2.2
+  
+  # Для работы с датами
+  intl: ^0.18.1
+  
+  # Material Design иконки
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+

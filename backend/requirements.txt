@@ -1,0 +1,24 @@
+# requirements.txt - List of all libraries for the project
+
+# FastAPI - framework for creating API
+fastapi==0.104.1
+
+# Uvicorn - server for running FastAPI
+uvicorn[standard]==0.24.0
+
+# SQLAlchemy - for working with database
+sqlalchemy==2.0.23
+
+# Pydantic - for data validation (already included in FastAPI, but explicitly specified)
+pydantic[email]==2.5.0
+
+# JWT - for creating and verifying tokens
+python-jose[cryptography]==3.3.0
+
+# Bcrypt - for password hashing
+# Using compatible versions
+passlib==1.7.4
+bcrypt==4.0.1
+
+# CORS - for allowing requests from Flutter (already included in FastAPI)
+# python-multipart - for working with forms (may be needed)
