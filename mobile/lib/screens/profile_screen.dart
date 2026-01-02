@@ -143,6 +143,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 32),
+            // Информация о пассажире
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Personal Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primaryPurple,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      icon: Icons.calendar_today,
+                      label: 'Date of Birth',
+                      value: DateFormat('dd.MM.yyyy').format(_profile!.dateOfBirth),
+                    ),
+                    const Divider(height: 24),
+                    _buildInfoRow(
+                      icon: Icons.credit_card,
+                      label: 'Passport Number',
+                      value: _profile!.passportNumber,
+                    ),
+                    if (_profile!.nationality != null && _profile!.nationality!.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      _buildInfoRow(
+                        icon: Icons.flag,
+                        label: 'Nationality',
+                        value: _profile!.nationality!,
+                      ),
+                    ],
+                    if (_profile!.phone != null && _profile!.phone!.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      _buildInfoRow(
+                        icon: Icons.phone,
+                        label: 'Phone',
+                        value: _profile!.phone!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -163,6 +215,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    const Color primaryPurple = Color(0xFF6B46C1);
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: primaryPurple.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: primaryPurple, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

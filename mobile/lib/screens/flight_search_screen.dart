@@ -350,12 +350,25 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Text(
-                                '${DateFormat('HH:mm').format(flight.departureTime)} → ${DateFormat('HH:mm').format(flight.arrivalTime)}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${DateFormat('MMM dd, yyyy').format(flight.departureTime)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${DateFormat('HH:mm').format(flight.departureTime)} → ${DateFormat('HH:mm').format(flight.arrivalTime)}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const Spacer(),
                               Text(

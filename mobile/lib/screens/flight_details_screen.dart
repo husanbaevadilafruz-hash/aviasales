@@ -89,6 +89,9 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   Future<PassengerPerSeat?> _showPassengerDataDialog(Seat seat) async {
     final nameController = TextEditingController();
     final docController = TextEditingController();
+    final nationalityController = TextEditingController();
+    final phoneController = TextEditingController();
+    final emailController = TextEditingController();
     DateTime? birthDate;
 
     // Пытаемся предзаполнить данными профиля, если это первое выбираемое место
@@ -99,6 +102,12 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                 nameController.text = '${profile.firstName} ${profile.lastName}';
                 docController.text = profile.passportNumber;
                 birthDate = profile.dateOfBirth;
+                if (profile.nationality != null) {
+                  nationalityController.text = profile.nationality!;
+                }
+                if (profile.phone != null) {
+                  phoneController.text = profile.phone!;
+                }
             }
         } catch (_) {}
     }
@@ -154,6 +163,35 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nationalityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Гражданство',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.flag),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Номер телефона',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Электронная почта',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
               ],
             ),
           ),
@@ -164,14 +202,24 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (nameController.text.trim().isEmpty || docController.text.trim().isEmpty || birthDate == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Заполните все поля')));
+                if (nameController.text.trim().isEmpty || 
+                    docController.text.trim().isEmpty || 
+                    birthDate == null ||
+                    nationalityController.text.trim().isEmpty ||
+                    phoneController.text.trim().isEmpty ||
+                    emailController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Заполните все поля'))
+                    );
                     return;
                 }
                 Navigator.pop(context, PassengerPerSeat(
                     fullName: nameController.text.trim(),
                     birthDate: birthDate!,
                     documentNumber: docController.text.trim(),
+                    nationality: nationalityController.text.trim(),
+                    phone: phoneController.text.trim(),
+                    email: emailController.text.trim(),
                 ));
               },
               child: const Text('Готово'),

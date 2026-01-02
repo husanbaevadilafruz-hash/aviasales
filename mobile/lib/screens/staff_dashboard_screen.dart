@@ -14,6 +14,7 @@ import 'manage_flights_screen.dart';
 import 'passengers_list_screen.dart';
 import 'all_notifications_screen.dart';
 import 'airplanes_list_screen.dart';
+import 'airports_list_screen.dart';
 
 class StaffDashboardScreen extends StatefulWidget {
   final User user;
@@ -90,6 +91,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             },
           ),
           _buildMenuCard(
+            icon: Icons.list_alt,
+            title: 'Список аэропортов',
+            color: Colors.deepOrange,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AirportsListScreen()),
+              );
+            },
+          ),
+          _buildMenuCard(
             icon: Icons.flight,
             title: 'Создать рейс',
             color: Colors.green,
@@ -149,8 +160,161 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               );
             },
           ),
+          _buildMenuCard(
+            icon: Icons.person_add,
+            title: 'Добавить сотрудника',
+            color: Colors.brown,
+            onTap: () {
+              _showCreateStaffDialog(context);
+            },
+          ),
         ],
       ),
+    );
+  }
+
+  void _showCreateStaffDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Добавить сотрудника'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email (логин)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      enabled: !isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Пароль',
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                      enabled: !isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: confirmPasswordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Подтвердите пароль',
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                      enabled: !isLoading,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          Navigator.of(dialogContext).pop();
+                        },
+                  child: const Text('Отмена'),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          // Валидация
+                          if (emailController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Введите email'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (passwordController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Введите пароль'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (passwordController.text != confirmPasswordController.text) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Пароли не совпадают'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          setState(() {
+                            isLoading = true;
+                          });
+
+                          try {
+                            await ApiService.createStaff(
+                              email: emailController.text.trim(),
+                              password: passwordController.text,
+                            );
+
+                            if (context.mounted) {
+                              Navigator.of(dialogContext).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Сотрудник успешно создан'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Ошибка: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setState(() {
+                                isLoading = false;
+                              });
+                            }
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Создать'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

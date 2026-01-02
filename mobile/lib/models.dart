@@ -211,6 +211,7 @@ class Booking {
   final int id;
   final Flight flight;
   final String status; // CREATED, CONFIRMED, CANCELLED
+  final String pnr; // Код бронирования (6 символов)
   final List<Ticket> tickets;
   final List<Payment> payments;
   final DateTime createdAt;
@@ -219,6 +220,7 @@ class Booking {
     required this.id,
     required this.flight,
     required this.status,
+    required this.pnr,
     required this.tickets,
     required this.payments,
     required this.createdAt,
@@ -230,6 +232,7 @@ class Booking {
         id: json['id'] as int,
         flight: Flight.fromJson(json['flight'] as Map<String, dynamic>),
         status: json['status'] as String? ?? 'UNKNOWN',
+        pnr: json['pnr'] as String? ?? '',
         tickets: (json['tickets'] as List?)
                 ?.map((ticket) => Ticket.fromJson(ticket as Map<String, dynamic>))
                 .toList() ??
@@ -515,6 +518,9 @@ class PassengerPerSeat {
   final String fullName;
   final DateTime birthDate;
   final String documentNumber;
+  final String? nationality;
+  final String? phone;
+  final String? email;
 
   PassengerPerSeat({
     this.id = 0,
@@ -523,6 +529,9 @@ class PassengerPerSeat {
     required this.fullName,
     required this.birthDate,
     required this.documentNumber,
+    this.nationality,
+    this.phone,
+    this.email,
   });
 
   factory PassengerPerSeat.fromJson(Map<String, dynamic> json) {
@@ -533,6 +542,9 @@ class PassengerPerSeat {
       fullName: json['full_name'],
       birthDate: DateTime.parse(json['birth_date']),
       documentNumber: json['document_number'],
+      nationality: json['nationality'],
+      phone: json['phone'],
+      email: json['email'],
     );
   }
 
@@ -541,6 +553,9 @@ class PassengerPerSeat {
       'full_name': fullName,
       'birth_date': birthDate.toIso8601String(),
       'document_number': documentNumber,
+      'nationality': nationality,
+      'phone': phone,
+      'email': email,
     };
   }
 }

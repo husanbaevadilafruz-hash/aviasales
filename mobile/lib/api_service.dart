@@ -795,6 +795,7 @@ class ApiService {
     required String status, // 'SCHEDULED', 'DELAYED', 'BOARDING', etc.
     DateTime? departureTime, // Новое время вылета (опционально, для DELAYED)
     DateTime? arrivalTime,   // Новое время прилёта (опционально, для DELAYED)
+    String? gate, // Новый gate (опционально)
   }) async {
     final Map<String, dynamic> body = {
       'status': status,
@@ -804,6 +805,9 @@ class ApiService {
     }
     if (arrivalTime != null) {
       body['arrival_time'] = arrivalTime.toUtc().toIso8601String();
+    }
+    if (gate != null) {
+      body['gate'] = gate;
     }
     
     final response = await http.patch(
@@ -1080,6 +1084,100 @@ class ApiService {
       final error = jsonDecode(responseBody);
       throw Exception(error['detail'] ?? 'Booking confirmation failed');
     }
+  }
+
+  // Создать нового сотрудника (только для существующих staff)
+  static Future<void> createStaff({
+    required String email,
+    required String password,
+  }) async {
+    final url = Uri.parse('$baseUrl/staff/create-staff');
+    final headers = await _getHeaders();
+    final body = jsonEncode({
+      'email': email,
+      'password': password,
+    });
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    final responseBody = utf8.decode(response.bodyBytes);
+
+    if (response.statusCode != 201) {
+      final error = jsonDecode(responseBody);
+      throw Exception(error['detail'] ?? 'Failed to create staff');
+    }
+  }
+
+  // ============================================
+  // STAFF BOOKING MANAGEMENT
+  // ============================================
+
+  // Поиск бронирования по PNR (для STAFF)
+  static Future<Booking> searchBookingByPnr(String pnr) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/staff/bookings/search?pnr=${Uri.encodeComponent(pnr)}'),
+      headers: await _getHeaders(),
+    );
+
+    final responseBody = utf8.decode(response.bodyBytes);
+
+    if (response.statusCode == 200) {
+      return Booking.fromJson(jsonDecode(responseBody));
+    } else {
+      final error = jsonDecode(responseBody);
+      throw Exception(error['detail'] ?? 'Бронирование не найдено');
+    }
+  }
+
+  // Отмена бронирования сотрудником (для STAFF)
+  static Future<void> staffCancelBooking(int bookingId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/staff/bookings/$bookingId/cancel'),
+      headers: await _getHeaders(),
+    );
+
+    final responseBody = utf8.decode(response.bodyBytes);
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(responseBody);
+      throw Exception(error['detail'] ?? 'Не удалось отменить бронирование');
+    }
+  }
+
+  // Переназначение места сотрудником (для STAFF)
+  static Future<Map<String, dynamic>> staffReassignSeat({
+    required int bookingId,
+    required int ticketId,
+    required int newSeatId,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/staff/bookings/$bookingId/reassign-seat'),
+      headers: await _getHeaders(),
+      body: jsonEncode({
+        'ticket_id': ticketId,
+        'new_seat_id': newSeatId,
+      }),
+    );
+
+    final responseBody = utf8.decode(response.bodyBytes);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(responseBody);
+    } else {
+      final error = jsonDecode(responseBody);
+      throw Exception(error['detail'] ?? 'Не удалось переназначить место');
+    }
+  }
+
+  // Получить бронирования для конкретного рейса (для STAFF)
+  static Future<List<Booking>> getBookingsByFlight(int flightId) async {
+    // Используем существующий метод getAllBookings и фильтруем
+    final allBookings = await getAllBookings();
+    return allBookings.where((b) => b.flight.id == flightId).toList();
   }
 }
 

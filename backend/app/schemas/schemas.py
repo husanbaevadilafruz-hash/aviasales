@@ -37,6 +37,12 @@ class UserLogin(BaseModel):
     password: str
 
 
+class StaffCreate(BaseModel):
+    """Схема для создания нового сотрудника (только для существующих staff)"""
+    email: EmailStr
+    password: str
+
+
 class Token(BaseModel):
     """Схема для JWT токена"""
     access_token: str
@@ -167,10 +173,11 @@ class FlightCreate(BaseModel):
 
 
 class FlightUpdate(BaseModel):
-    """Схема для обновления статуса рейса и времени вылета/прилёта"""
+    """Схема для обновления статуса рейса, времени вылета/прилёта и gate"""
     status: FlightStatus
     departure_time: Optional[datetime] = None  # Новое время вылета (для DELAYED)
     arrival_time: Optional[datetime] = None    # Новое время прилёта (для DELAYED)
+    gate: Optional[str] = None  # Новый gate (выход на посадку)
 
 
 class FlightResponse(BaseModel):

@@ -58,6 +58,7 @@ from app.models import (
 from app.schemas import (
     UserRegister,
     UserLogin,
+    StaffCreate,
     Token,
     PassengerProfileCreate,
     PassengerProfileResponse,
@@ -548,14 +549,31 @@ def create_flight(
     - Устанавливает базовую цену билета
     
     После создания рейс получает статус SCHEDULED (запланирован).
+    Рейс должен быть создан минимум за 24 часа до вылета.
     """
+    # Проверка: рейс должен быть создан минимум за 24 часа до вылета
+    min_departure_time = datetime.utcnow() + timedelta(hours=24)
+    if flight_data.departure_time < min_departure_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Рейс можно создать минимум за 24 часа до вылета. Минимальное время вылета: {min_departure_time.strftime('%d.%m.%Y %H:%M')} UTC"
+        )
+    
+    # Проверка: аэропорты отправления и прибытия не должны быть одинаковыми
+    if flight_data.departure_airport_id == flight_data.arrival_airport_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Аэропорт отправления и аэропорт прибытия не могут быть одинаковыми"
+        )
+    
     # Проверка: самолёт не должен быть занят в это время
     # Ищем рейсы с этим самолётом, которые пересекаются по времени
+    # Проверяем все статусы кроме CANCELLED и COMPLETED (самолет может быть занят в любом активном статусе)
     conflicting_flights = db.query(Flight).filter(
         Flight.airplane_id == flight_data.airplane_id,
-        Flight.status.in_([FlightStatus.SCHEDULED, FlightStatus.DELAYED, FlightStatus.BOARDING]),
+        ~Flight.status.in_([FlightStatus.CANCELLED, FlightStatus.COMPLETED]),
         # Проверяем пересечение временных интервалов:
-        # Новый рейс начинается до окончания существующего И заканчивается после начала существующего
+        # Интервалы пересекаются, если: departure_time < existing.arrival_time AND arrival_time > existing.departure_time
         Flight.departure_time < flight_data.arrival_time,
         Flight.arrival_time > flight_data.departure_time
     ).first()
@@ -684,6 +702,13 @@ def update_flight_status(
             detail="Flight not found"
         )
     
+    # Проверка: нельзя изменить статус рейса, если он уже COMPLETED
+    if flight.status == FlightStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change status of a completed flight"
+        )
+    
     old_status = flight.status
     
     # Обновляем статус
@@ -691,16 +716,51 @@ def update_flight_status(
     
     # Обновляем время вылета/прилёта, если передано (для DELAYED)
     time_changed = False
+    new_departure_time = flight.departure_time
+    new_arrival_time = flight.arrival_time
+    
     if flight_update.departure_time is not None:
-        flight.departure_time = flight_update.departure_time
+        new_departure_time = flight_update.departure_time
         time_changed = True
     if flight_update.arrival_time is not None:
-        flight.arrival_time = flight_update.arrival_time
+        new_arrival_time = flight_update.arrival_time
         time_changed = True
+    
+    # Проверка: если время изменилось, проверяем конфликты с другими рейсами того же самолета
+    if time_changed:
+        # Ищем рейсы с этим самолётом, которые пересекаются по времени
+        # Исключаем текущий рейс и рейсы со статусами CANCELLED и COMPLETED
+        conflicting_flights = db.query(Flight).filter(
+            Flight.airplane_id == flight.airplane_id,
+            Flight.id != flight_id,  # Исключаем текущий рейс
+            ~Flight.status.in_([FlightStatus.CANCELLED, FlightStatus.COMPLETED]),
+            # Проверяем пересечение временных интервалов
+            Flight.departure_time < new_arrival_time,
+            Flight.arrival_time > new_departure_time
+        ).first()
+        
+        if conflicting_flights:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Этот самолёт занят в это время. Конфликт с рейсом {conflicting_flights.flight_number} ({conflicting_flights.departure_time.strftime('%d.%m.%Y %H:%M')} - {conflicting_flights.arrival_time.strftime('%H:%M')})"
+            )
+        
+        # Применяем изменения времени только после проверки
+        if flight_update.departure_time is not None:
+            flight.departure_time = new_departure_time
+        if flight_update.arrival_time is not None:
+            flight.arrival_time = new_arrival_time
+    
+    # Обработка изменения gate
+    gate_changed = False
+    old_gate = flight.gate
+    if flight_update.gate is not None and flight_update.gate != flight.gate:
+        flight.gate = flight_update.gate
+        gate_changed = True
     
     db.commit()
     
-    # Отправляем уведомления всем пассажирам рейса при изменении статуса или времени
+    # Отправляем уведомления всем пассажирам рейса при изменении статуса, времени или gate
     status_changed = old_status != flight_update.status
     if status_changed or time_changed:
         # Используем NotificationService для отправки уведомлений
@@ -716,6 +776,25 @@ def update_flight_status(
             bookings = db.query(Booking).filter(Booking.flight_id == flight_id).all()
             for booking in bookings:
                 booking.status = "CANCELLED"
+        
+        db.commit()
+    
+    # Отправляем уведомление при изменении gate (отдельно от статуса)
+    if gate_changed and not status_changed:
+        # Получаем всех пассажиров рейса
+        bookings = db.query(Booking).filter(
+            Booking.flight_id == flight_id,
+            Booking.status != "CANCELLED"
+        ).all()
+        
+        for booking in bookings:
+            NotificationService.create_notification(
+                db=db,
+                user_id=booking.user_id,
+                title="Изменение выхода на посадку",
+                message=f"Для рейса {flight.flight_number} изменён выход на посадку: {old_gate or 'Н/Д'} → {flight.gate}",
+                flight_id=flight.id
+            )
         
         db.commit()
     
@@ -1362,6 +1441,273 @@ def cancel_booking(
 
 
 # ============================================
+# STAFF BOOKING MANAGEMENT
+# ============================================
+
+@app.get("/staff/bookings/search", response_model=BookingWithDetailsResponse)
+def search_booking_by_pnr(
+    pnr: str,
+    current_user: User = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Поиск бронирования по PNR (только для staff).
+    
+    Позволяет сотруднику быстро найти бронирование по коду PNR.
+    """
+    booking = db.query(Booking).filter(Booking.pnr == pnr.upper()).first()
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Бронирование с таким PNR не найдено"
+        )
+    
+    flight = booking.flight
+    if flight is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рейс для данного бронирования не найден"
+        )
+    
+    flight_response = create_flight_response(flight)
+    
+    # Собираем информацию о билетах
+    tickets_response = []
+    for ticket in booking.tickets:
+        full_name = f"{ticket.passenger_first_name} {ticket.passenger_last_name}"
+        tickets_response.append(TicketResponse(
+            id=ticket.id,
+            booking_id=ticket.booking_id,
+            seat=SeatResponse(
+                id=ticket.seat.id,
+                airplane_id=ticket.seat.airplane_id,
+                seat_number=ticket.seat.seat_number,
+                status=ticket.seat.status,
+                held_until=ticket.seat.held_until
+            ),
+            passenger_first_name=ticket.passenger_first_name,
+            passenger_last_name=ticket.passenger_last_name,
+            ticket_number=ticket.ticket_number,
+            full_name=full_name,
+            check_in=CheckInResponse(
+                id=ticket.check_in.id,
+                ticket_id=ticket.check_in.ticket_id,
+                boarding_pass_number=ticket.check_in.boarding_pass_number,
+                checked_in_at=ticket.check_in.checked_in_at
+            ) if ticket.check_in else None
+        ))
+    
+    # Собираем информацию о платежах
+    payments_response = []
+    for payment in booking.payments:
+        payments_response.append(PaymentResponse(
+            id=payment.id,
+            booking_id=payment.booking_id,
+            amount=payment.amount,
+            method=payment.method,
+            status=payment.status,
+            created_at=payment.created_at
+        ))
+    
+    return BookingWithDetailsResponse(
+        id=booking.id,
+        flight=flight_response,
+        status=booking.status,
+        pnr=booking.pnr or "",
+        tickets=tickets_response,
+        payments=payments_response,
+        created_at=booking.created_at
+    )
+
+
+@app.post("/staff/bookings/{booking_id}/cancel", status_code=status.HTTP_200_OK)
+def staff_cancel_booking(
+    booking_id: int,
+    current_user: User = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Отмена бронирования сотрудником (только для staff).
+    
+    - Сотрудник может отменить любое бронирование
+    - Нельзя отменить бронирование после вылета рейса
+    - Освобождает все места
+    - Удаляет все check-ins
+    """
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Бронирование не найдено"
+        )
+    
+    # Проверяем, что бронирование ещё не отменено
+    if booking.status == "CANCELLED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Бронирование уже отменено"
+        )
+    
+    # Проверяем, что рейс ещё не вылетел
+    flight = booking.flight
+    if flight is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рейс не найден"
+        )
+    
+    # Проверка: нельзя отменить после вылета
+    if datetime.utcnow() > flight.departure_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя отменить бронирование после вылета рейса"
+        )
+    
+    # Освобождаем все места и удаляем check-ins
+    for ticket in booking.tickets:
+        if ticket.seat:
+            ticket.seat.status = SeatStatus.AVAILABLE
+            ticket.seat.held_until = None
+        # Удаляем check-in если есть
+        checkin = db.query(CheckIn).filter(CheckIn.ticket_id == ticket.id).first()
+        if checkin:
+            db.delete(checkin)
+    
+    # Отменяем бронирование
+    booking.status = "CANCELLED"
+    
+    db.commit()
+    
+    # Отправляем уведомление пассажиру
+    NotificationService.create_notification(
+        db=db,
+        user_id=booking.user_id,
+        title="Бронирование отменено",
+        message=f"Ваше бронирование {booking.pnr} на рейс {flight.flight_number} было отменено сотрудником авиакомпании.",
+        flight_id=flight.id
+    )
+    db.commit()
+    
+    return {"message": "Бронирование успешно отменено"}
+
+
+@app.put("/staff/bookings/{booking_id}/reassign-seat", status_code=status.HTTP_200_OK)
+def staff_reassign_seat(
+    booking_id: int,
+    ticket_id: int = Body(..., embed=False),
+    new_seat_id: int = Body(..., embed=False),
+    current_user: User = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Переназначение места для билета (только для staff).
+    
+    - Сотрудник может переназначить место на любое другое
+    - Нельзя назначить место, занятое другим пассажиром
+    - Освобождает старое место
+    - Нельзя изменять места после вылета
+    """
+    # Находим бронирование
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Бронирование не найдено"
+        )
+    
+    # Проверяем, что бронирование не отменено
+    if booking.status == "CANCELLED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя изменить отменённое бронирование"
+        )
+    
+    # Проверяем, что рейс ещё не вылетел
+    flight = booking.flight
+    if flight is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рейс не найден"
+        )
+    
+    if datetime.utcnow() > flight.departure_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя изменить место после вылета рейса"
+        )
+    
+    # Находим билет
+    ticket = db.query(Ticket).filter(
+        Ticket.id == ticket_id,
+        Ticket.booking_id == booking_id
+    ).first()
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Билет не найден в данном бронировании"
+        )
+    
+    # Находим новое место
+    new_seat = db.query(Seat).filter(Seat.id == new_seat_id).first()
+    if not new_seat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Место не найдено"
+        )
+    
+    # Проверяем, что место относится к тому же самолёту
+    if new_seat.airplane_id != flight.airplane_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Место не принадлежит самолёту данного рейса"
+        )
+    
+    # Проверяем, что новое место не занято другим пассажиром (BOOKED)
+    # Staff может переназначить на AVAILABLE или HELD места
+    if new_seat.status == SeatStatus.BOOKED:
+        # Проверяем, нет ли уже билета на это место для этого рейса
+        existing_ticket = db.query(Ticket).join(Booking).filter(
+            Ticket.seat_id == new_seat_id,
+            Booking.flight_id == flight.id,
+            Booking.status != "CANCELLED"
+        ).first()
+        if existing_ticket and existing_ticket.id != ticket_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Место {new_seat.seat_number} уже занято другим пассажиром"
+            )
+    
+    # Освобождаем старое место
+    old_seat = ticket.seat
+    old_seat_number = old_seat.seat_number
+    old_seat.status = SeatStatus.AVAILABLE
+    old_seat.held_until = None
+    
+    # Назначаем новое место
+    ticket.seat_id = new_seat_id
+    new_seat.status = SeatStatus.BOOKED
+    new_seat.held_until = None
+    
+    db.commit()
+    
+    # Отправляем уведомление пассажиру
+    NotificationService.create_notification(
+        db=db,
+        user_id=booking.user_id,
+        title="Место изменено",
+        message=f"Ваше место на рейсе {flight.flight_number} было изменено с {old_seat_number} на {new_seat.seat_number}.",
+        flight_id=flight.id
+    )
+    db.commit()
+    
+    return {
+        "message": f"Место успешно изменено с {old_seat_number} на {new_seat.seat_number}",
+        "old_seat": old_seat_number,
+        "new_seat": new_seat.seat_number
+    }
+
+
+# ============================================
 # ОТМЕНА БИЛЕТОВ
 # ============================================
 
@@ -1787,6 +2133,43 @@ def get_all_passengers(
             ))
     
     return result
+
+
+@app.post("/staff/create-staff", status_code=status.HTTP_201_CREATED)
+def create_staff(
+    staff_data: StaffCreate,
+    current_user: User = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Создание нового сотрудника (только для существующих staff).
+    
+    Требуется:
+    - email: Email нового сотрудника
+    - password: Пароль нового сотрудника
+    
+    Новый сотрудник будет иметь те же права и функции, что и существующие сотрудники.
+    """
+    # Проверяем, не существует ли уже пользователь с таким email
+    existing_user = db.query(User).filter(User.email == staff_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Создаём нового сотрудника
+    hashed_password = get_password_hash(staff_data.password)
+    new_staff = User(
+        email=staff_data.email,
+        hashed_password=hashed_password,
+        role=UserRole.STAFF
+    )
+    db.add(new_staff)
+    db.commit()
+    db.refresh(new_staff)
+    
+    return {"message": "Staff created successfully", "email": new_staff.email}
 
 
 # ============================================

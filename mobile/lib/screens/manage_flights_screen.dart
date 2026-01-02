@@ -43,19 +43,24 @@ class _ManageFlightsScreenState extends State<ManageFlightsScreen> {
     }
   }
 
-  Future<void> _updateFlightStatus(Flight flight, String newStatus, {DateTime? newDepartureTime, DateTime? newArrivalTime}) async {
+  Future<void> _updateFlightStatus(Flight flight, String newStatus, {DateTime? newDepartureTime, DateTime? newArrivalTime, String? newGate}) async {
     try {
       await ApiService.updateFlightStatus(
         flightId: flight.id,
         status: newStatus,
         departureTime: newDepartureTime,
         arrivalTime: newArrivalTime,
+        gate: newGate,
       );
 
       if (mounted) {
-        String message = 'Статус рейса изменён на: $newStatus';
-        if (newDepartureTime != null) {
-          message += '\nНовое время вылета: ${DateFormat('dd.MM.yyyy HH:mm').format(newDepartureTime)}';
+        String message = 'Рейс обновлён';
+        if (newGate != null) {
+          message = 'Gate изменён на: $newGate';
+        } else if (newDepartureTime != null) {
+          message = 'Статус рейса изменён на: $newStatus\nНовое время вылета: ${DateFormat('dd.MM.yyyy HH:mm').format(newDepartureTime)}';
+        } else {
+          message = 'Статус рейса изменён на: $newStatus';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -70,6 +75,7 @@ class _ManageFlightsScreenState extends State<ManageFlightsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -111,6 +117,50 @@ class _ManageFlightsScreenState extends State<ManageFlightsScreen> {
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  void _showGateDialog(Flight flight) {
+    final gateController = TextEditingController(text: flight.gate);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Изменить Gate для ${flight.flightNumber}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Текущий Gate: ${flight.gate.isNotEmpty ? flight.gate : "Не указан"}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: gateController,
+              decoration: const InputDecoration(
+                labelText: 'Новый Gate',
+                hintText: 'Например: A12, B5',
+                border: OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.characters,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newGate = gateController.text.trim();
+              Navigator.pop(context);
+              if (newGate.isNotEmpty && newGate != flight.gate) {
+                _updateFlightStatus(flight, flight.status, newGate: newGate);
+              }
+            },
+            child: const Text('Сохранить'),
+          ),
+        ],
       ),
     );
   }
@@ -264,11 +314,28 @@ class _ManageFlightsScreenState extends State<ManageFlightsScreen> {
                                     '${DateFormat('dd.MM.yyyy HH:mm').format(flight.departureTime)} - ${DateFormat('HH:mm').format(flight.arrivalTime)}',
                                   ),
                                   Text('Статус: ${flight.status}'),
+                                  Text(
+                                    'Gate: ${flight.gate.isNotEmpty ? flight.gate : "Не указан"}',
+                                    style: TextStyle(
+                                      color: flight.gate.isNotEmpty ? Colors.green : Colors.grey,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () => _showStatusDialog(flight),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.door_front_door, color: Colors.blue),
+                                    tooltip: 'Изменить Gate',
+                                    onPressed: () => _showGateDialog(flight),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    tooltip: 'Изменить статус',
+                                    onPressed: () => _showStatusDialog(flight),
+                                  ),
+                                ],
                               ),
                             ),
                           );
