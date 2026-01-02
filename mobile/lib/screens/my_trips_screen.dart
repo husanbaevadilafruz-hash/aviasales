@@ -223,9 +223,24 @@ class MyTripsScreenState extends State<MyTripsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryPurple = Color(0xFF6B46C1);
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Мои поездки'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'My Trips',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: primaryPurple,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -278,8 +293,14 @@ class MyTripsScreenState extends State<MyTripsScreen> {
   }
 
   Widget _buildBookingCard(Booking booking) {
+    const Color primaryPurple = Color(0xFF6B46C1);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -288,14 +309,22 @@ class MyTripsScreenState extends State<MyTripsScreen> {
             // Заголовок рейса
             Row(
               children: [
-                const Icon(Icons.flight, color: Colors.blue),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primaryPurple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.flight, color: primaryPurple, size: 24),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Рейс ${booking.flight.flightNumber}',
+                    'Flight ${booking.flight.flightNumber}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: primaryPurple,
                     ),
                   ),
                 ),

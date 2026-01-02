@@ -91,13 +91,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
+    const Color primaryPurple = Color(0xFF6B46C1);
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Профиль пассажира'),
-        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'My Profile',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: primaryPurple,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(Icons.notifications, color: primaryPurple),
             tooltip: 'Уведомления',
             onPressed: () {
               Navigator.push(
@@ -106,54 +120,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Center(
-              child: CircleAvatar(
-                radius: 50,
-                child: Icon(Icons.person, size: 50),
+            const SizedBox(height: 20),
+            const CircleAvatar(
+              radius: 50,
+              backgroundColor: Color(0xFFE9D5FF),
+              child: Icon(Icons.person, size: 50, color: primaryPurple),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "${_profile!.firstName} ${_profile!.lastName}",
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: primaryPurple,
               ),
             ),
-            const SizedBox(height: 20),
-            _buildInfoTile("Имя", "${_profile!.firstName} ${_profile!.lastName}"),
-            _buildInfoTile("Дата рождения", DateFormat('dd.MM.yyyy').format(_profile!.dateOfBirth)),
-            _buildInfoTile("Паспорт", _profile!.passportNumber),
-            _buildInfoTile("Гражданство", _profile!.nationality ?? "Не указано"),
-            _buildInfoTile("Телефон", _profile!.phone ?? "Не указан"),
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton.icon(
                 onPressed: _logout,
-                icon: const Icon(Icons.exit_to_app),
-                label: const Text("Выйти"),
+                icon: const Icon(Icons.logout),
+                label: const Text(
+                  "Log Out",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: primaryPurple,
                   foregroundColor: Colors.white,
                 ),
               ),
-            )
+            ),
+            const SizedBox(height: 20),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(String label, String value) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        title: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        subtitle: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
   }

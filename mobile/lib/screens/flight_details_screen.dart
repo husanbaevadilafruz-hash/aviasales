@@ -220,9 +220,25 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryPurple = Color(0xFF6B46C1);
+    const Color lightPurple = Color(0xFFE9D5FF);
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Детали рейса'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Flight Details',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: primaryPurple,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -246,88 +262,199 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                     ],
                   ),
                 )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  // Информация о рейсе
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Рейс ${widget.flight.flightNumber}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+              : Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        lightPurple.withOpacity(0.2),
+                        Colors.white,
+                      ],
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header with destination
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                primaryPurple,
+                                primaryPurple.withOpacity(0.8),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          const SizedBox(height: 16),
-                          Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      widget.flight.departureAirport.code,
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      DateFormat('HH:mm').format(
-                                        widget.flight.departureTime,
-                                      ),
-                                    ),
-                                    Text(
-                                      widget.flight.departureAirport.city,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
+                              Text(
+                                'Flight to ${widget.flight.arrivalAirport.city}',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      widget.flight.arrivalAirport.code,
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      DateFormat('HH:mm').format(
-                                        widget.flight.arrivalTime,
-                                      ),
-                                    ),
-                                    Text(
-                                      widget.flight.arrivalAirport.city,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
+                              const SizedBox(height: 4),
+                              Text(
+                                '${widget.flight.departureAirport.city} (${widget.flight.departureAirport.code}) to ${widget.flight.arrivalAirport.city} (${widget.flight.arrivalAirport.code})',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.9),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Цена: ${widget.flight.basePrice.toStringAsFixed(0)} ₽',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                        ),
+                        const SizedBox(height: 24),
+                        // Информация о рейсе
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: primaryPurple.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.flight, color: primaryPurple),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Flight Information',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryPurple,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            widget.flight.departureAirport.code,
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('HH:mm').format(
+                                              widget.flight.departureTime,
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('MMM dd, yyyy').format(
+                                              widget.flight.departureTime,
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward, color: primaryPurple),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            widget.flight.arrivalAirport.code,
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('HH:mm').format(
+                                              widget.flight.arrivalTime,
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('MMM dd, yyyy').format(
+                                              widget.flight.arrivalTime,
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time, size: 16, color: primaryPurple),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Duration: ${widget.flight.arrivalTime.difference(widget.flight.departureTime).inHours}h ${(widget.flight.arrivalTime.difference(widget.flight.departureTime).inMinutes % 60)}m',
+                                      style: TextStyle(color: Colors.grey.shade700),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                                    const SizedBox(width: 8),
+                                    const Text('Nonstop: Yes', style: TextStyle(color: Colors.grey)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.flight, size: 16, color: primaryPurple),
+                                    const SizedBox(width: 8),
+                                    const Text('Class: Economy', style: TextStyle(color: Colors.grey)),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Price: \$${widget.flight.basePrice.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryPurple,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                   const SizedBox(height: 24),
                   // Легенда мест
                   const Text(
@@ -414,29 +541,38 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                         );
                       },
                     ),
-                  const SizedBox(height: 24),
-                  // Кнопка бронирования
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _proceedToBooking,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: Text(
-                        'Забронировать (${_selectedSeats.length} мест)',
-                      ),
+                        const SizedBox(height: 24),
+                        // Кнопка бронирования
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _proceedToBooking,
+                            child: Text(
+                              'Continue Booking',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
       bottomNavigationBar: _selectedSeats.isNotEmpty
           ? Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.blue,
+              decoration: BoxDecoration(
+                color: primaryPurple,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
               child: Text(
-                'Выбрано мест: ${_selectedSeats.length}',
+                'Selected seats: ${_selectedSeats.length}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,

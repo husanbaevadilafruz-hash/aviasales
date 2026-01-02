@@ -72,18 +72,22 @@ class _MainScreenState extends State<MainScreen> {
               _currentIndex = index;
             });
           },
+          selectedItemColor: const Color(0xFF6B46C1),
+          unselectedItemColor: Colors.grey,
+          backgroundColor: Colors.white,
+          elevation: 8,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.search),
-              label: 'Поиск',
+              label: 'Search',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.airplane_ticket),
-              label: 'Мои поездки',
+              label: 'My Trips',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),
-              label: 'Профиль',
+              label: 'Profile',
             ),
           ],
         ),
