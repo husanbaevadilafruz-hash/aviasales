@@ -639,7 +639,7 @@ def search_flights(
     
     flights = query.all()
     
-    # РџСЂРµРѕР±СЂР°Р·СѓРµРј РІ РѕС‚РІРµС‚ СЃ Р°СЌСЂРѕРїРѕСЂС‚Р°РјРё
+   
     return [create_flight_response(flight) for flight in flights]
 
 
@@ -726,7 +726,7 @@ def update_flight_status(
 
 
 # ============================================
-# РњР•РЎРўРђ Р SEAT MAP
+# SEAT MAP
 # ============================================
 
 @app.get("/flights/{flight_id}/seat-map", response_model=SeatMapResponse)
