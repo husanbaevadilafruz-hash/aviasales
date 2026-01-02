@@ -119,6 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         passportNumber: _passportController.text.trim(),
         nationality: _nationalityController.text.trim(),
         phone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
       );
 
       if (mounted) {

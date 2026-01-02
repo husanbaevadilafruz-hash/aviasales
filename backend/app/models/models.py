@@ -111,10 +111,11 @@ class PassengerProfile(Base):
     last_name = Column(String, nullable=False)
     date_of_birth = Column(DateTime, nullable=False)
     passport_number = Column(String, nullable=False)
-    # Телефон и гражданство требуются бизнес-логикой, но оставляем nullable=True для совместимости
+    # Телефон, гражданство и email требуются бизнес-логикой, но оставляем nullable=True для совместимости
     # со старыми SQLite базами и существующими записями.
     phone = Column(String, nullable=True)
     nationality = Column(String, nullable=True)
+    email = Column(String, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

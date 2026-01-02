@@ -200,6 +200,7 @@ class ApiService {
     required String passportNumber,
     required String phone,
     required String nationality,
+    required String email,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/passenger/profile'),
@@ -211,6 +212,7 @@ class ApiService {
         'passport_number': passportNumber,
         'phone': phone,
         'nationality': nationality,
+        'email': email,
       }),
     );
 
@@ -1079,6 +1081,40 @@ class ApiService {
       final responseBody = utf8.decode(response.bodyBytes);
       final error = jsonDecode(responseBody);
       throw Exception(error['detail'] ?? 'Booking confirmation failed');
+    }
+  }
+
+  // Создать нового сотрудника (только для staff)
+  static Future<void> createStaff({
+    required String email,
+    required String password,
+  }) async {
+    final url = Uri.parse('$baseUrl/staff/create-staff');
+    final headers = await _getHeaders();
+    final body = jsonEncode({
+      'email': email,
+      'password': password,
+    });
+    
+    debugPrint('=== CREATE STAFF REQUEST ===');
+    debugPrint('URL: $url');
+    debugPrint('Headers: $headers');
+    debugPrint('Body: $body');
+    debugPrint('===========================');
+    
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    debugPrint('Response status: ${response.statusCode}');
+    debugPrint('Response body: ${utf8.decode(response.bodyBytes)}');
+
+    if (response.statusCode != 201) {
+      final responseBody = utf8.decode(response.bodyBytes);
+      final error = jsonDecode(responseBody);
+      throw Exception(error['detail'] ?? 'Failed to create staff');
     }
   }
 }

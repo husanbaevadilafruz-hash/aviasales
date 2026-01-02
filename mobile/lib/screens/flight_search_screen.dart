@@ -256,7 +256,11 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                       children: [
                         Text('Рейс: ${flight.flightNumber}'),
                         Text(
-                          '${DateFormat('HH:mm').format(flight.departureTime)} - ${DateFormat('HH:mm').format(flight.arrivalTime)}',
+                          'Дата: ${DateFormat('dd MMM yyyy').format(flight.departureTime)}',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          'Вылет: ${DateFormat('HH:mm').format(flight.departureTime)} - Прилёт: ${DateFormat('HH:mm').format(flight.arrivalTime)}',
                         ),
                         Text(
                           '${flight.departureAirport.city} → ${flight.arrivalAirport.city}',

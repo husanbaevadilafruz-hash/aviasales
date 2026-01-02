@@ -37,6 +37,12 @@ class UserLogin(BaseModel):
     password: str
 
 
+class StaffCreate(BaseModel):
+    """Схема для создания нового сотрудника"""
+    email: EmailStr
+    password: str
+
+
 class Token(BaseModel):
     """Схема для JWT токена"""
     access_token: str
@@ -61,6 +67,7 @@ class PassengerProfileCreate(BaseModel):
     passport_number: str
     phone: str
     nationality: str
+    email: str
 
 
 class PassengerProfileResponse(BaseModel):
@@ -73,6 +80,7 @@ class PassengerProfileResponse(BaseModel):
     passport_number: str
     phone: Optional[str]
     nationality: Optional[str]
+    email: Optional[str]
     created_at: datetime
     
     class Config:
@@ -363,6 +371,9 @@ class BoardingPassResponse(BaseModel):
     qr_payload: str
     departure_time: datetime
     arrival_time: datetime
+    passenger_email: Optional[str] = None
+    passenger_phone: Optional[str] = None
+    passenger_nationality: Optional[str] = None
 
 
 # ============================================

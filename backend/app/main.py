@@ -58,6 +58,7 @@ from app.models import (
 from app.schemas import (
     UserRegister,
     UserLogin,
+    StaffCreate,
     Token,
     PassengerProfileCreate,
     PassengerProfileResponse,
@@ -241,11 +242,13 @@ def create_passenger_profile(
     Обязательно нужно заполнить перед бронированием билетов.
     """
     # Проверяем, есть ли уже профиль
-    # Валидация обязательных полей (phone + nationality)
+    # Валидация обязательных полей (phone + nationality + email)
     if not profile_data.phone or not profile_data.phone.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phone is required")
     if not profile_data.nationality or not profile_data.nationality.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nationality is required")
+    if not profile_data.email or not profile_data.email.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
 
     existing_profile = db.query(PassengerProfile).filter(PassengerProfile.user_id == current_user.id).first()
     
@@ -257,6 +260,7 @@ def create_passenger_profile(
         existing_profile.passport_number = profile_data.passport_number
         existing_profile.phone = profile_data.phone
         existing_profile.nationality = profile_data.nationality
+        existing_profile.email = profile_data.email
         existing_profile.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(existing_profile)
@@ -270,7 +274,8 @@ def create_passenger_profile(
             date_of_birth=profile_data.date_of_birth,
             passport_number=profile_data.passport_number,
             phone=profile_data.phone,
-            nationality=profile_data.nationality
+            nationality=profile_data.nationality,
+            email=profile_data.email
         )
         db.add(new_profile)
         db.commit()
@@ -1540,6 +1545,12 @@ def get_boarding_pass(
     if not flight:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found")
 
+    # Получаем профиль пассажира для email, phone, nationality
+    passenger_profile = db.query(PassengerProfile).filter(PassengerProfile.user_id == ticket.booking.user_id).first()
+    passenger_email = passenger_profile.email if passenger_profile else None
+    passenger_phone = passenger_profile.phone if passenger_profile else None
+    passenger_nationality = passenger_profile.nationality if passenger_profile else None
+
     boarding_time = flight.departure_time - timedelta(minutes=30)
     gate = getattr(flight, "gate", "") or ""
     qr_payload = f"BP:{checkin.boarding_pass_number}|FN:{flight.flight_number}|SEAT:{ticket.seat.seat_number}|GATE:{gate}|BT:{boarding_time.isoformat()}"
@@ -1573,7 +1584,10 @@ def get_boarding_pass(
         boarding_time=boarding_time,
         qr_payload=qr_payload,
         departure_time=flight.departure_time,
-        arrival_time=flight.arrival_time
+        arrival_time=flight.arrival_time,
+        passenger_email=passenger_email,
+        passenger_phone=passenger_phone,
+        passenger_nationality=passenger_nationality
     )
 
 
@@ -1652,6 +1666,45 @@ def get_my_notifications(
         Notification.user_id == current_user.id
     ).order_by(Notification.created_at.desc()).all()
     return notifications
+
+
+@app.post("/staff/create-staff", status_code=status.HTTP_201_CREATED)
+def create_staff(
+    staff_data: StaffCreate,
+    current_user: User = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Создание нового сотрудника (только для существующих staff).
+    
+    Требуется:
+    - email: Email нового сотрудника
+    - password: Пароль нового сотрудника
+    """
+    print(f"[CREATE_STAFF] Request from user {current_user.email} to create staff with email {staff_data.email}")
+    
+    # Проверяем, что email не занят
+    existing_user = db.query(User).filter(User.email == staff_data.email).first()
+    if existing_user:
+        print(f"[CREATE_STAFF] Email {staff_data.email} already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Создаём нового сотрудника
+    hashed_password = get_password_hash(staff_data.password)
+    new_staff = User(
+        email=staff_data.email,
+        hashed_password=hashed_password,
+        role=UserRole.STAFF
+    )
+    db.add(new_staff)
+    db.commit()
+    db.refresh(new_staff)
+    
+    print(f"[CREATE_STAFF] Successfully created staff with email {new_staff.email}")
+    return {"message": "Staff created successfully", "email": new_staff.email}
 
 
 @app.post("/notifications", response_model=NotificationSendResponse, status_code=status.HTTP_201_CREATED)
