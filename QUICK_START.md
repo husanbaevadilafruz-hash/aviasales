@@ -44,7 +44,13 @@ python seed.py
 
 ### Шаг 7: Запустите сервер
 ```powershell
-
+Connected devices:
+Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version
+10.0.26100.7462]
+Edge (web)        • edge    • web-javascript • Microsoft Edge 143.0.3650.96
+[1]: Windows (windows)
+[2]: Edge (edge)
+Please choose one (or "q" to quit):    #если вот так выйдет, нужно выбирать 2
 
 
 

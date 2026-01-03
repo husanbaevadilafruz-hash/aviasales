@@ -1166,32 +1166,6 @@ class ApiService {
     }
   }
 
-  // Создать нового сотрудника (только для существующих staff)
-  static Future<void> createStaff({
-    required String email,
-    required String password,
-  }) async {
-    final url = Uri.parse('$baseUrl/staff/create-staff');
-    final headers = await _getHeaders();
-    final body = jsonEncode({
-      'email': email,
-      'password': password,
-    });
-
-    final response = await http.post(
-      url,
-      headers: headers,
-      body: body,
-    );
-
-    final responseBody = utf8.decode(response.bodyBytes);
-
-    if (response.statusCode != 201) {
-      final error = jsonDecode(responseBody);
-      throw Exception(error['detail'] ?? 'Failed to create staff');
-    }
-  }
-
   // ============================================
   // STAFF BOOKING MANAGEMENT
   // ============================================

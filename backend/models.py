@@ -16,7 +16,13 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Foreig
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from database import Base
+
+try:
+    # При запуске из корневой папки backend
+    from database import Base
+except ImportError:
+    # При запуске из другой папки
+    from app.core.database import Base
 
 
 # ============================================

@@ -1127,6 +1127,90 @@ def get_my_bookings(
         return []
 
 
+@app.get("/bookings/history", response_model=list[BookingWithDetailsResponse])
+def get_booking_history(
+    current_user: User = Depends(get_current_passenger),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение истории покупок текущего пользователя.
+    
+    Возвращает ВСЕ бронирования пользователя, включая отмененные (CANCELLED).
+    Сортирует по дате создания (от новых к старым).
+    """
+    try:
+        # Получаем ВСЕ бронирования пользователя, включая отмененные
+        bookings = db.query(Booking).filter(
+            Booking.user_id == current_user.id
+        ).order_by(Booking.created_at.desc()).all()
+        
+        result = []
+        for booking in bookings:
+            # Получаем рейс с аэропортами
+            flight = booking.flight
+            
+            # Пропускаем бронирования, у которых рейс удалён
+            if flight is None:
+                continue
+            
+            flight_response = create_flight_response(flight)
+            
+            # Получаем билеты
+            tickets_response = []
+            for ticket in booking.tickets:
+                full_name = f"{ticket.passenger_first_name} {ticket.passenger_last_name}"
+                tickets_response.append(TicketResponse(
+                    id=ticket.id,
+                    booking_id=ticket.booking_id,
+                    seat=SeatResponse(
+                        id=ticket.seat.id,
+                        airplane_id=ticket.seat.airplane_id,
+                        seat_number=ticket.seat.seat_number,
+                        status=ticket.seat.status,
+                        held_until=ticket.seat.held_until
+                    ),
+                    passenger_first_name=ticket.passenger_first_name,
+                    passenger_last_name=ticket.passenger_last_name,
+                    ticket_number=ticket.ticket_number,
+                    full_name=full_name,
+                    check_in=CheckInResponse(
+                        id=ticket.check_in.id,
+                        ticket_id=ticket.check_in.ticket_id,
+                        boarding_pass_number=ticket.check_in.boarding_pass_number,
+                        checked_in_at=ticket.check_in.checked_in_at
+                    ) if ticket.check_in else None
+                ))
+            
+            # Получаем платежи
+            payments_response = []
+            for payment in booking.payments:
+                payments_response.append(PaymentResponse(
+                    id=payment.id,
+                    booking_id=payment.booking_id,
+                    amount=payment.amount,
+                    method=payment.method,
+                    status=payment.status,
+                    created_at=payment.created_at
+                ))
+            
+            result.append(BookingWithDetailsResponse(
+                id=booking.id,
+                flight=flight_response,
+                status=booking.status,
+                pnr=booking.pnr or "",
+                tickets=tickets_response,
+                payments=payments_response,
+                created_at=booking.created_at
+            ))
+        
+        return result
+    except Exception as e:
+        print(f"ERROR in get_booking_history: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
 @app.get("/bookings/all", response_model=list[BookingWithDetailsResponse])
 def get_all_bookings(
     current_user: User = Depends(get_current_staff),
