@@ -200,6 +200,7 @@ class ApiService {
     required String passportNumber,
     required String phone,
     required String nationality,
+    required String email,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/passenger/profile'),
@@ -211,6 +212,7 @@ class ApiService {
         'passport_number': passportNumber,
         'phone': phone,
         'nationality': nationality,
+        'email': email,
       }),
     );
 
@@ -517,6 +519,50 @@ class ApiService {
       debugPrint('ERROR: Status code ${response.statusCode}');
       debugPrint('Response body: ${response.body}');
       throw Exception('Failed to load bookings: ${response.statusCode}');
+    }
+  }
+
+  // Получить историю покупок (все бронирования, включая отмененные)
+  static Future<List<Booking>> getBookingHistory() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/bookings/history'),
+      headers: await _getHeaders(),
+    );
+
+    final responseBody = utf8.decode(response.bodyBytes);
+
+    if (response.statusCode == 200) {
+      try {
+        if (responseBody.isEmpty || responseBody.trim() == '') {
+          return [];
+        }
+        
+        final List<dynamic> data = jsonDecode(responseBody);
+        if (data.isEmpty) {
+          return [];
+        }
+        
+        final List<Booking> bookings = [];
+        for (final json in data) {
+          try {
+            // Пропускаем бронирования без рейса
+            if (json['flight'] == null) {
+              continue;
+            }
+            bookings.add(Booking.fromJson(json));
+          } catch (e) {
+            debugPrint('Error parsing booking in history: $e');
+            // Пропускаем проблемное бронирование
+            continue;
+          }
+        }
+        return bookings;
+      } catch (e) {
+        debugPrint('Error parsing booking history: $e');
+        throw Exception('Failed to parse booking history');
+      }
+    } else {
+      throw Exception('Failed to load booking history');
     }
   }
 
@@ -1083,6 +1129,40 @@ class ApiService {
       final responseBody = utf8.decode(response.bodyBytes);
       final error = jsonDecode(responseBody);
       throw Exception(error['detail'] ?? 'Booking confirmation failed');
+    }
+  }
+
+  // Создать нового сотрудника (только для staff)
+  static Future<void> createStaff({
+    required String email,
+    required String password,
+  }) async {
+    final url = Uri.parse('$baseUrl/staff/create-staff');
+    final headers = await _getHeaders();
+    final body = jsonEncode({
+      'email': email,
+      'password': password,
+    });
+    
+    debugPrint('=== CREATE STAFF REQUEST ===');
+    debugPrint('URL: $url');
+    debugPrint('Headers: $headers');
+    debugPrint('Body: $body');
+    debugPrint('===========================');
+    
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    debugPrint('Response status: ${response.statusCode}');
+    debugPrint('Response body: ${utf8.decode(response.bodyBytes)}');
+
+    if (response.statusCode != 201) {
+      final responseBody = utf8.decode(response.bodyBytes);
+      final error = jsonDecode(responseBody);
+      throw Exception(error['detail'] ?? 'Failed to create staff');
     }
   }
 

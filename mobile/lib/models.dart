@@ -350,6 +350,9 @@ class BoardingPass {
   final DateTime boardingTime;
   final String qrPayload;
   final String boardingPassNumber;
+  final String? passengerEmail;
+  final String? passengerPhone;
+  final String? passengerNationality;
 
   BoardingPass({
     required this.passengerName,
@@ -359,6 +362,9 @@ class BoardingPass {
     required this.boardingTime,
     required this.qrPayload,
     required this.boardingPassNumber,
+    this.passengerEmail,
+    this.passengerPhone,
+    this.passengerNationality,
   });
 
   factory BoardingPass.fromJson(Map<String, dynamic> json) {
@@ -370,6 +376,9 @@ class BoardingPass {
       boardingTime: DateTime.parse(json['boarding_time'] as String),
       qrPayload: json['qr_payload'] as String,
       boardingPassNumber: json['boarding_pass_number'] as String,
+      passengerEmail: json['passenger_email'] as String?,
+      passengerPhone: json['passenger_phone'] as String?,
+      passengerNationality: json['passenger_nationality'] as String?,
     );
   }
 }
@@ -415,6 +424,7 @@ class PassengerProfile {
   final String passportNumber;
   final String? phone;
   final String? nationality;
+  final String? email;
 
   PassengerProfile({
     required this.id,
@@ -425,6 +435,7 @@ class PassengerProfile {
     required this.passportNumber,
     this.phone,
     this.nationality,
+    this.email,
   });
 
   factory PassengerProfile.fromJson(Map<String, dynamic> json) {
@@ -437,6 +448,7 @@ class PassengerProfile {
       passportNumber: json['passport_number'],
       phone: json['phone'],
       nationality: json['nationality'],
+      email: json['email'],
     );
   }
 }

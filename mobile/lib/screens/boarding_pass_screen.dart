@@ -30,6 +30,12 @@ class BoardingPassScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _row('Passenger name', pass.passengerName),
+                if (pass.passengerEmail != null && pass.passengerEmail!.isNotEmpty)
+                  _row('Email', pass.passengerEmail!),
+                if (pass.passengerPhone != null && pass.passengerPhone!.isNotEmpty)
+                  _row('Phone', pass.passengerPhone!),
+                if (pass.passengerNationality != null && pass.passengerNationality!.isNotEmpty)
+                  _row('Nationality', pass.passengerNationality!),
                 _row('Seat', pass.seat),
                 _row('Gate', pass.gate.isEmpty ? '-' : pass.gate),
                 _row('Boarding time', DateFormat('dd MMM yyyy, HH:mm').format(pass.boardingTime)),
