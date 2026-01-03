@@ -286,44 +286,11 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
               ..._flights.map((flight) {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
-<<<<<<< HEAD
                   elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: InkWell(
-=======
-                  child: ListTile(
-                    leading: const Icon(Icons.flight, size: 40),
-                    title: Text(
-                      '${flight.departureAirport.code} → ${flight.arrivalAirport.code}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Рейс: ${flight.flightNumber}'),
-                        Text(
-                          'Дата: ${DateFormat('dd MMM yyyy').format(flight.departureTime)}',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          'Вылет: ${DateFormat('HH:mm').format(flight.departureTime)} - Прилёт: ${DateFormat('HH:mm').format(flight.arrivalTime)}',
-                        ),
-                        Text(
-                          '${flight.departureAirport.city} → ${flight.arrivalAirport.city}',
-                        ),
-                        Text(
-                          '${flight.basePrice.toStringAsFixed(0)} ₽',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
->>>>>>> f46b3f26725408c02e22b8699e5d9673a6d3dba5
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
