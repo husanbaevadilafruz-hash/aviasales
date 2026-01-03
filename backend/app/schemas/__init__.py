@@ -5,6 +5,7 @@ schemas - Pydantic schemas package
 from .schemas import (
     UserRegister,
     UserLogin,
+    StaffCreate,
     Token,
     PassengerProfileCreate,
     PassengerProfileResponse,
@@ -40,6 +41,7 @@ from .schemas import (
 __all__ = [
     "UserRegister",
     "UserLogin",
+    "StaffCreate",
     "Token",
     "PassengerProfileCreate",
     "PassengerProfileResponse",

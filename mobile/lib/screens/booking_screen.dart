@@ -65,6 +65,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final passportController = TextEditingController();
     final phoneController = TextEditingController();
     final nationalityController = TextEditingController();
+    final emailController = TextEditingController();
     DateTime? selectedDate;
 
     showDialog(
@@ -143,6 +144,15 @@ class _BookingScreenState extends State<BookingScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
               ],
             ),
           ),
@@ -158,7 +168,8 @@ class _BookingScreenState extends State<BookingScreen> {
                     selectedDate == null ||
                     passportController.text.isEmpty ||
                     phoneController.text.isEmpty ||
-                    nationalityController.text.isEmpty) {
+                    nationalityController.text.isEmpty ||
+                    emailController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Заполните все обязательные поля'),
@@ -175,6 +186,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     passportNumber: passportController.text,
                     phone: phoneController.text,
                     nationality: nationalityController.text,
+                    email: emailController.text,
                   );
 
                   if (mounted) {
