@@ -1,3 +1,5 @@
+https://youtu.be/JL38lTASuqg
+
 ✈️ Aviasales — Airline Booking & Operations System
 
 A full-stack airline booking platform built as a 96-hour technical exam project, featuring a FastAPI backend and a Flutter mobile application. The system supports both passenger-facing booking flows and staff-facing flight operations management, similar to a real-world airline system (e.g. Turkish Airlines).
